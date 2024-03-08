@@ -37,7 +37,7 @@ public class TodoService {
         todos.add(todo);
     }
 
-    public static void deleteByID(int id) {
+    public void deleteByID(int id) {
         Predicate<? super Todo> predicate = todo -> todo.getId() == id;
         todos.removeIf(predicate);
     }
@@ -48,7 +48,7 @@ public class TodoService {
         return todo;
     }
 
-    public static void updateTodo(@Valid Todo todo) {
+    public void updateTodo(@Valid Todo todo) {
         deleteByID(todo.getId()); 
         todos.add(todo);
     }
