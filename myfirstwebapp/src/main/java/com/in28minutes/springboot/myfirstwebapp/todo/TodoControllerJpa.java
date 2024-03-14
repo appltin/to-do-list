@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,23 +16,21 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 
 import jakarta.validation.Valid;
 
-
-
-
-//@Controller
+@Controller
 @SessionAttributes("name")
-public class TodoController {
+public class TodoControllerJpa {
 
-    private TodoService todoService;
     
-    public TodoController(TodoService todoService) {
-        this.todoService = todoService;
+    private TodoRepository todoRepository;
+    
+    public TodoControllerJpa(TodoRepository todoRepository) {
+        this.todoRepository = todoRepository;
     }
 
     @RequestMapping("list-todos")
     public String ListAllTodos(ModelMap model){
-        String name = getLoggedUsername(model);
-        List<Todo> todos = todoService.findUsername(name);
+        String username = getLoggedUsername(model);
+        List<Todo> todos = todoRepository.findByUsername(username);
         model.addAttribute("todos", todos);
 
         return "listTodos";
@@ -39,31 +38,36 @@ public class TodoController {
 
     @RequestMapping(value="add-todo", method=RequestMethod.GET)
     public String showNewTodoPage(ModelMap model){
-        String username = (String)model.get("name");
-        Todo todo = new Todo(0, username, "",LocalDate.now().plusYears(1), false);
-        model.put("todo", todo);
+        String username = getLoggedUsername(model);
+        Todo todo = new Todo(0, username, "", LocalDate.now().plusYears(1), false);
+        model.put("todo",todo);
         return "todo";
     }
 
     @RequestMapping(value="add-todo", method=RequestMethod.POST)
     public String addNewTodo(ModelMap model, @Valid Todo todo, BindingResult result){
+
         if(result.hasErrors()){
             return "todo";
         }
-        String username = (String)model.get("name");
-        todoService.addTodo(username, todo.getDescription(), todo.getTargetDate(), false);
+        
+        String username = getLoggedUsername(model);
+        todo.setUsername(username);
+        //todoService.addTodo(username, todo.getDescription(),todo.getTargetDate(), todo.isDone());
+        todoRepository.save(todo);
         return "redirect:list-todos";
     }
 
+
     @RequestMapping(value="delete-todo", method=RequestMethod.GET)
     public String deleteTodo(@RequestParam int id){
-        todoService.deleteByID(id);
+        todoRepository.deleteById(id);
         return "redirect:list-todos";
     }
 
     @RequestMapping(value="update-todo",method=RequestMethod.GET)
     public String showdateTodo(@RequestParam int id, ModelMap model){
-        Todo todo = todoService.findById(id);
+        Todo todo = todoRepository.findById(id).get();
         model.addAttribute("todo",todo);
         return "todo";
     }
@@ -73,9 +77,9 @@ public class TodoController {
         if(result.hasErrors()){
             return "todo";
         }
-        String username = (String)model.get("name");
+        String username = getLoggedUsername(model);
         todo.setUsername(username);
-        todoService.updateTodo(todo);
+        todoRepository.save(todo);
         return "redirect:list-todos";
     }
 
